@@ -31,7 +31,7 @@ function App() {
     try {
       const requests = categories.map((category) =>
         axios.get(
-          `http://localhost:5000/api/news?category=${category}`
+          `http://news-alert-system-bgbm.onrender.com/api/news?category=${category}`
         )
       );
 
@@ -51,7 +51,7 @@ function App() {
   const loadNotifications = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:5000/api/notifications"
+        "http://news-alert-system-bgbm.onrender.com/api/notifications"
       );
 
       setNotifications(response.data);
@@ -74,7 +74,7 @@ useEffect(() => {
   const searchNews = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/news?category=${search}`
+        `http://news-alert-system-bgbm.onrender.com/api/news?category=${search}`
       );
 
       setNews(response.data.articles || []);
@@ -90,7 +90,7 @@ useEffect(() => {
     const loadPreferences = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:5000/api/preferences"
+          "http://news-alert-system-bgbm.onrender.com/api/preferences"
         );
 
         const savedEmail = response.data.email || "";
@@ -147,7 +147,7 @@ useEffect(() => {
   const savePreferences = async () => {
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/preferences",
+        "http://news-alert-system-bgbm.onrender.com/api/preferences",
         {
           email: email,
           categories: selectedCategories,
@@ -167,7 +167,7 @@ useEffect(() => {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#f4f7fb]">
+    <div className="app-layout">
 
       <Dashboard setActivePage={setActivePage} activePage={activePage} />
 
