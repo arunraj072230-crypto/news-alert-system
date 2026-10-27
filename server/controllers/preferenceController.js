@@ -4,15 +4,31 @@ export const savePreferences = async (req, res) => {
   try {
     const { categories, frequency, email, notificationTypes } = req.body;
 
+    if (!email || !email.trim()) {
+  return res.status(400).json({
+    message: "Email is required",
+  });
+}
+
+const normalizedEmail = email.trim().toLowerCase();
+
     const preference = await Preference.findOneAndUpdate(
-      { email },
-      { categories, frequency, notificationTypes },
+       { email: normalizedEmail },
+  {
+    email: normalizedEmail,
+    categories,
+    frequency,
+    notificationTypes,
+  },
+    
       {
-        returnDocument: "after",
+        new: true,
         upsert: true,
+        runValidators: true,
       }
     );
 
+    
     res.status(200).json(preference);
   } catch (error) {
     console.error("Preference save error:", error.message);
@@ -25,7 +41,9 @@ export const savePreferences = async (req, res) => {
 
 export const getPreferences = async (req, res) => {
   try {
-    const preference = await Preference.findOne();
+    const preference = await Preference.findOne({
+  email: { $ne: "" },
+});
 
     if (!preference) {
       return res.json({

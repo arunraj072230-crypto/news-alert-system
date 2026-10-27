@@ -43,7 +43,14 @@ export const getNews = async (req, res) => {
 
     const articles = response.data.articles || [];
 
-if (articles.length > 0) {
+    const io = req.app.get("io");
+
+io.emit("newsUpdate", {
+  category,
+  articles,
+});
+
+    if (req.query.skipAlerts !== "true" && articles.length > 0) {
   await sendNewsAlert(articles[0], category);
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { io } from "socket.io-client";
 import Dashboard from "./components/Dashboard";
 import "./App.css";
 
@@ -26,6 +27,31 @@ function App() {
   const [isEditing, setIsEditing] = useState(false);
   const [search, setSearch] = useState("");
   const [activePage, setActivePage] = useState("dashboard");
+
+  useEffect(() => {
+  const socket = io("https://news-alert-system-bgbm.onrender.com");
+
+  socket.on("newsUpdate", ({ category, articles }) => {
+    console.log("Real-time news received:", category, articles);
+
+    setNews((previousNews) => {
+      const otherNews = previousNews.filter(
+        (article) =>
+          !articles.some((newArticle) => newArticle.url === article.url)
+      );
+
+      return [...articles, ...otherNews];
+    });
+  });
+
+  socket.on("connect_error", (error) => {
+    console.error("Socket connection error:", error.message);
+  });
+
+  return () => {
+    socket.disconnect();
+  };
+}, []);
   
   const fetchNewsForCategories = async (categories) => {
     try {
@@ -90,7 +116,7 @@ useEffect(() => {
     const loadPreferences = async () => {
       try {
         const response = await axios.get(
-          "https://news-alert-system-bgbm.onrender.com/api/preferences"
+           "http://localhost:5000/api/preferences"
         );
 
         const savedEmail = response.data.email || "";

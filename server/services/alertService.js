@@ -2,57 +2,82 @@ import Preference from "../models/Preference.js";
 import Notification from "../models/Notification.js";
 import { sendEmail } from "./emailService.js";
 
+async function sendAlertToPreference(article, category, preference) {
+  if (!article?.url || !preference?.email) return;
+
+  const existingNotification = await Notification.findOne({
+    articleId: article.url,
+    email: preference.email,
+  });
+
+  if (existingNotification) return;
+
+  const message =
+    article.description || "New news article available.";
+
+  const success = await sendEmail(
+    preference.email,
+    `News Alert: ${article.title}`,
+    message
+  );
+
+  if (!success) {
+    console.error(`Email failed for ${preference.email}`);
+    return;
+  }
+
+  await Notification.create({
+    articleId: article.url,
+    email: preference.email,
+    title: article.title,
+    message,
+    category,
+    notificationType: "email",
+    status: "sent",
+  });
+
+  console.log(
+    `${preference.frequency} alert sent to ${preference.email}`
+  );
+}
+
 export const sendNewsAlert = async (article, category) => {
   try {
-    const preferences = await Preference.find();
+    const preferences = await Preference.find({
+      email: { $ne: "" },
+      categories: category,
+      "notificationTypes.email": true,
+      frequency: "immediate",
+    });
 
     for (const preference of preferences) {
-      const emailEnabled =
-        preference.notificationTypes?.email === true;
-
-      const categorySelected =
-        preference.categories?.includes(category);
-
-      if (!preference.email ||!emailEnabled || !categorySelected) {
-        continue;
-      }
-   
-      
-      const existingNotification = await Notification.findOne({
-        articleId: article.url,
-          email: preference.email,
-           });
-
-        if (existingNotification) {
-  continue;
-          }
-      
-      await sendEmail(
-        preference.email,
-        `News Alert: ${article.title}`,
-        article.description || "New news article available."
-      );
-
-      await Notification.create({
-         articleId: article.url,
-        email: preference.email,
-        title: article.title,
-        message:
-          article.description ||
-          "New news article available.",
-        category: category,
-        notificationType: "email",
-        status: "sent",
-      });
-
-      console.log(
-        `News alert sent to ${preference.email}`
-      );
+      await sendAlertToPreference(article, category, preference);
     }
   } catch (error) {
-    console.error(
-      "News alert error:",
-      error.message
-    );
+    console.error("Immediate alert error:", error.message);
+  }
+};
+
+export const sendScheduledNewsAlert = async (
+  article,
+  category,
+  frequency,
+  email
+) => {
+  try {
+    if (!["hourly", "daily"].includes(frequency)) return;
+
+    const preference = await Preference.findOne({
+      email,
+      categories: category,
+      "notificationTypes.email": true,
+      frequency,
+    });
+
+    if (!preference) return;
+
+    await sendAlertToPreference(article, category, preference);
+  } catch (error) {
+    console.error("Scheduled alert error:", error.message);
   }
 };
