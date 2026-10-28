@@ -1,5 +1,5 @@
 import axios from "axios";
-import { sendNewsAlert } from "../services/alertService.js";
+import { sendNewsAlert,  sendNewsPushSummary } from "../services/alertService.js";
 
 export const getNews = async (req, res) => {
   try {
@@ -52,6 +52,7 @@ io.emit("newsUpdate", {
 
     if (req.query.skipAlerts !== "true" && articles.length > 0) {
   await sendNewsAlert(articles[0], category);
+  await sendNewsPushSummary(articles, category);
 }
 
     res.json(response.data);

@@ -103,6 +103,17 @@ cron.schedule("0 8 * * *", () => {
 }, {
   timezone: "Asia/Kolkata",
 });
+
+cron.schedule(
+  "*/5 * * * *",
+  async () => {
+    console.log("Starting scheduled news check...");
+    await runImmediateNewsChecks();
+  },
+  {
+    timezone: "Asia/Kolkata",
+  }
+);
  
 async function startServer() {
   try {
