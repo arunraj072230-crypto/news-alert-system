@@ -1,26 +1,35 @@
+
 import Preference from "../models/Preference.js";
 
 export const savePreferences = async (req, res) => {
   try {
+    const userId = req.user.id;
     const { categories, frequency, email, notificationTypes } = req.body;
 
     if (!email || !email.trim()) {
-  return res.status(400).json({
-    message: "Email is required",
-  });
-}
+      return res.status(400).json({
+        message: "Email is required",
+      });
+    }
 
-const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = email.trim().toLowerCase();
 
     const preference = await Preference.findOneAndUpdate(
-       { email: normalizedEmail },
-  {
-    email: normalizedEmail,
-    categories,
-    frequency,
-    notificationTypes,
-  },
-    
+      { userId },
+      {
+        $set: {
+          email: normalizedEmail,
+          categories: categories || [],
+          frequency: frequency || "immediate",
+          notificationTypes: notificationTypes || {
+            email: true,
+            push: false,
+          },
+        },
+        $setOnInsert: {
+          userId,
+        },
+      },
       {
         new: true,
         upsert: true,
@@ -28,7 +37,6 @@ const normalizedEmail = email.trim().toLowerCase();
       }
     );
 
-    
     res.status(200).json(preference);
   } catch (error) {
     console.error("Preference save error:", error.message);
@@ -41,18 +49,19 @@ const normalizedEmail = email.trim().toLowerCase();
 
 export const getPreferences = async (req, res) => {
   try {
-    const preference = await Preference.findOne({
-  email: { $ne: "" },
-});
+    const userId = req.user.id;
+
+    const preference = await Preference.findOne({ userId });
 
     if (!preference) {
       return res.json({
+        userId,
         email: "",
         frequency: "immediate",
         categories: [],
         notificationTypes: {
-        email: true,
-        push: false,
+          email: true,
+          push: false,
         },
       });
     }

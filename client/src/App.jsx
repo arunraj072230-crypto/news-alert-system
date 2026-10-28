@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { io } from "socket.io-client";
 import Dashboard from "./components/Dashboard";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 import "./App.css";
+import { enablePushNotifications } from "./pushNotifications";
 
 function App() {
   const categories = [
@@ -27,6 +31,20 @@ function App() {
   const [isEditing, setIsEditing] = useState(false);
   const [search, setSearch] = useState("");
   const [activePage, setActivePage] = useState("dashboard");
+  const [user, setUser] = useState(() => {
+  const savedUser = sessionStorage.getItem("user");
+  return savedUser ? JSON.parse(savedUser) : null;
+});
+
+const navigate = useNavigate();
+
+const handleLogout = () => {
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("user");
+  setUser(null);
+
+  window.location.replace("/login")
+};
 
   useEffect(() => {
   const socket = io("https://news-alert-system-bgbm.onrender.com");
@@ -115,9 +133,16 @@ useEffect(() => {
   useEffect(() => {
     const loadPreferences = async () => {
       try {
-        const response = await axios.get(
-           "http://localhost:5000/api/preferences"
-        );
+         const token = sessionStorage.getItem("token");
+
+      const response = await axios.get(
+        "https://news-alert-system-bgbm.onrender.com/api/preferences",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
         const savedEmail = response.data.email || "";
         const savedCategories =
@@ -172,15 +197,22 @@ useEffect(() => {
 
   const savePreferences = async () => {
     try {
-      const response = await axios.post(
-        "https://news-alert-system-bgbm.onrender.com/api/preferences",
-        {
-          email: email,
-          categories: selectedCategories,
-          frequency: frequency,
-          notificationTypes: notificationTypes,
-        }
-      );
+      const token = sessionStorage.getItem("token");
+
+const response = await axios.post(
+  "http://localhost:5000/api/preferences",
+  {
+    email,
+    categories: selectedCategories,
+    frequency,
+    notificationTypes,
+  },
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
 
       console.log("Preferences saved:", response.data);
 
@@ -195,7 +227,8 @@ useEffect(() => {
   return (
     <div className="app-layout">
 
-      <Dashboard setActivePage={setActivePage} activePage={activePage} />
+      <Dashboard setActivePage={setActivePage} activePage={activePage} 
+         handleLogout={handleLogout}/>
 
       <main className="main-content">
 
@@ -402,7 +435,8 @@ useEffect(() => {
            news.map((article, index) => (
             <article className="news-item" key={index}>
                {article.urlToImage && (
-                      <img src={article.urlToImage} alt=""/>)}
+                <img src={article.urlToImage} alt={article.title || "News image"}
+                  onError={(e) => {e.currentTarget.style.display = "none";}}/>)}
 
              <div className="news-details">
                <span className="news-category">News</span>
@@ -432,4 +466,19 @@ useEffect(() => {
   );
 }
 
-export default App;
+function AppRoutes() {
+  const token = sessionStorage.getItem("token");
+
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />}/>
+
+      <Route path="/register" element={<Register />}/>
+
+      <Route path="/*" element={token ? <App /> : <Navigate to="/login" replace />}/>
+    </Routes>
+  );
+}
+
+
+export default AppRoutes;

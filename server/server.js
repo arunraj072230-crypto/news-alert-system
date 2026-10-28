@@ -1,4 +1,3 @@
-
 import dns from "node:dns";
 import "dotenv/config";
 import express from "express";
@@ -12,6 +11,8 @@ import preferenceRoutes from "./routes/preferenceRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import Preference from "./models/Preference.js";
 import { sendScheduledNewsAlert } from "./services/alertService.js";
+import authRoutes from "./routes/authRoutes.js";
+import pushRoutes from "./routes/pushRoutes.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -26,6 +27,8 @@ const io = new Server(httpServer, {
 app.set("io", io);
 app.use(cors());
 app.use(express.json());
+app.use("/api/auth", authRoutes);
+app.use("/api/push", pushRoutes);
 
 const PORT = process.env.PORT || 5000;
 

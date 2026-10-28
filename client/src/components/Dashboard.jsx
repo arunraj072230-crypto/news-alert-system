@@ -1,8 +1,20 @@
 import {useState} from "react";
+import { useNavigate } from "react-router-dom";
+import { enablePushNotifications } from "../pushNotifications";
 
-function Dashboard({ setActivePage, activePage }) {
+
+function Dashboard({ setActivePage, activePage, handleLogout }) {
 
   const [showSettings, setShowSettings] = useState(false);
+  const navigate = useNavigate();
+  const handleEnableNotifications = async () => {
+  try {
+    const message = await enablePushNotifications();
+    alert(message);
+  } catch (error) {
+    alert(error.message || "Failed to enable notifications.");
+  }
+};
 
   return (
     <aside className="sidebar">
@@ -22,11 +34,24 @@ function Dashboard({ setActivePage, activePage }) {
           Dashboard
         </div>
 
-     <div className="nav-item" onClick={() => setShowSettings(!showSettings)}>
-      <span>☷</span>
-        Settings
-      </div>
+        <div className="nav-item auth-nav-item" 
+           onClick={() => (navigate("/login"))}>
+          <span>🔑</span>
+          Login
+        </div>
 
+        <div className="nav-item auth-nav-item" 
+           onClick={() => (navigate("/register"))}>
+          <span>👤</span>
+          Register
+        </div>
+
+        <div className="nav-item" onClick={() => setShowSettings(!showSettings)}>
+         <span>☷</span>
+          Settings
+        </div>
+
+       
 {showSettings && (
   <>
     <div className={activePage === "preferences" ? "nav-item active" : "nav-item"}
@@ -41,7 +66,18 @@ function Dashboard({ setActivePage, activePage }) {
       Notifications
     </div>
   </>
-)}   
+)}  
+
+<button
+  type="button"
+  onClick={handleEnableNotifications}
+  className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+>
+  Enable Notifications
+</button>
+
+ <button type="button" onClick={handleLogout} className="nav-item"> 🚪 Logout</button>
+
       </nav>
     </aside>
   );

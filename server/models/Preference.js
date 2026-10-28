@@ -1,6 +1,12 @@
 import mongoose from "mongoose";
 
 const preferenceSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+
   email: {
     type: String,
     required: true,
@@ -29,6 +35,8 @@ const preferenceSchema = new mongoose.Schema({
     },
   },
 });
+
+preferenceSchema.index({ userId: 1 }, { unique: true });
 
 const Preference = mongoose.model(
   "Preference",

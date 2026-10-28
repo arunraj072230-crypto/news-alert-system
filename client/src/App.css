@@ -601,4 +601,40 @@ position: fixed;
     width: 100px;
     height: 75px;
   }
+
+  
+/* Login and Register sidebar items */
+.sidebar-nav .nav-item.auth-nav-item {
+  color: #c6d0df;
+  background: transparent;
+  padding: 14px 16px;
+  margin: 0;
+  border-radius: 9px;
+  font-size: 15px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-nav .nav-item.auth-nav-item:hover {
+  background: #1d2d4c;
+  color: #ffffff;
+}
+
+.sidebar-nav .nav-item.auth-nav-item span {
+  width: 22px;
+  text-align: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.sidebar-nav button {
+  position: relative;
+  z-index: 10;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+  
+
+
 }
