@@ -4,7 +4,7 @@ import PushSubscription from "../models/PushSubscription.js";
 import { sendEmail } from "./emailService.js";
 import webpush from "../config/webPush.js";
 
-async function sendAlertToPreference(article, category, preference) {
+async function sendEmailAlert(article, category, preference) {
   if (!article?.url || !preference?.email) return;
 
   const alreadySent = await Notification.exists({
@@ -35,6 +35,10 @@ async function sendAlertToPreference(article, category, preference) {
     notificationType: "email",
     status: "sent",
   });
+
+  console.log(
+    `${preference.frequency} email alert sent to ${preference.email}`
+  );
 }
 
 export const sendNewsAlert = async (article, category) => {
@@ -48,9 +52,12 @@ export const sendNewsAlert = async (article, category) => {
 
     for (const preference of preferences) {
       try {
-        await sendAlertToPreference(article, category, preference);
+        await sendEmailAlert(article, category, preference);
       } catch (error) {
-        console.error("Email alert error:", error.message);
+        console.error(
+          `Immediate email alert failed for ${preference.email}:`,
+          error.message
+        );
       }
     }
   } catch (error) {
@@ -75,16 +82,27 @@ export const sendScheduledNewsAlert = async (
     });
 
     if (preference) {
-      await sendAlertToPreference(article, category, preference);
+      await sendEmailAlert(article, category, preference);
     }
   } catch (error) {
-    console.error("Scheduled email alert error:", error.message);
+    console.error(
+      `Scheduled ${frequency} email alert failed for ${email}:`,
+      error.message
+    );
   }
 };
 
-// One push notification containing multiple new article headlines.
-export const sendNewsPushSummary = async (articles, category) => {
+export const sendNewsPushSummary = async (
+  articles,
+  category,
+  frequency = "immediate"
+) => {
   try {
+    if (!["immediate", "hourly", "daily"].includes(frequency)) {
+      console.error(`Unsupported push frequency: ${frequency}`);
+      return;
+    }
+
     if (!Array.isArray(articles) || articles.length === 0) {
       console.log(`Push skipped for ${category}: no articles`);
       return;
@@ -94,11 +112,12 @@ export const sendNewsPushSummary = async (articles, category) => {
       email: { $ne: "" },
       categories: category,
       "notificationTypes.push": true,
-      frequency: "immediate",
+      frequency,
     });
 
     console.log(
-      `Push check: category=${category}, articles=${articles.length}, users=${preferences.length}`
+      `${frequency} push check: category=${category}, ` +
+        `articles=${articles.length}, users=${preferences.length}`
     );
 
     for (const preference of preferences) {
@@ -138,25 +157,43 @@ export const sendNewsPushSummary = async (articles, category) => {
           .map((article) => article.title)
           .filter(Boolean);
 
-        const title = `${newArticles.length} new ${category} article${
-          newArticles.length === 1 ? "" : "s"
-        }`;
+        const title =
+          `${newArticles.length} new ${category} article` +
+          (newArticles.length === 1 ? "" : "s");
 
         const body =
           headlines.join(" • ") ||
           "Open News Alert System to read the latest news.";
 
-        await webpush.sendNotification(
-          savedSubscription.subscription,
-          JSON.stringify({
-            title,
-            body,
-            url: "/",
-            category,
-          })
-        );
+        try {
+          await webpush.sendNotification(
+            savedSubscription.subscription,
+            JSON.stringify({
+              title,
+              body,
+              url: "/",
+              category,
+              frequency,
+            })
+          );
+        } catch (pushError) {
+          if (
+            pushError.statusCode === 404 ||
+            pushError.statusCode === 410
+          ) {
+            await PushSubscription.deleteOne({
+              _id: savedSubscription._id,
+            });
+          }
 
-        // Store each article separately so duplicate alerts can be prevented.
+          console.error(
+            `Push notification failed for ${preference.email}:`,
+            pushError.statusCode || "",
+            pushError.message
+          );
+          continue;
+        }
+
         await Notification.insertMany(
           newArticles.map((article) => ({
             articleId: article.url,
@@ -170,22 +207,20 @@ export const sendNewsPushSummary = async (articles, category) => {
         );
 
         console.log(
-          `Push summary sent to ${preference.email}: ${newArticles.length} articles`
+          `${frequency} push summary sent to ${preference.email}: ` +
+            `${newArticles.length} articles`
         );
       } catch (error) {
-        if (error.statusCode === 404 || error.statusCode === 410) {
-          await PushSubscription.deleteOne({
-            userId: preference.userId,
-          });
-        }
-
         console.error(
-          `Push summary failed for ${preference.email}:`,
+          `${frequency} push summary failed for ${preference.email}:`,
           error.message
         );
       }
     }
   } catch (error) {
-    console.error("News push summary error:", error.message);
+    console.error(
+      `${frequency} push summary error:`,
+      error.message
+    );
   }
 };

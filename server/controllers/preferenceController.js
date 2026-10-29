@@ -31,7 +31,7 @@ export const savePreferences = async (req, res) => {
         },
       },
       {
-        new: true,
+        returnDocument: "after",
         upsert: true,
         runValidators: true,
       }

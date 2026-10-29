@@ -47,6 +47,7 @@ export async function enablePushNotifications() {
       });
     }
 
+
     const response = await fetch(`${API_URL}/api/push/subscribe`, {
       method: "POST",
       headers: {

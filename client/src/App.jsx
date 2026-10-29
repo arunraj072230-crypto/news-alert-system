@@ -91,18 +91,25 @@ const handleLogout = () => {
     }
   };
 
-  useEffect(() => {
+useEffect(() => {
   const loadNotifications = async () => {
     try {
+      const token = sessionStorage.getItem("token");
+
       const response = await axios.get(
-        "https://news-alert-system-bgbm.onrender.com/api/notifications"
+        "https://news-alert-system-bgbm.onrender.com/api/notifications",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       setNotifications(response.data);
     } catch (error) {
       console.error(
         "Load notifications error:",
-        error
+        error.response?.data || error.message
       );
     }
   };
@@ -200,7 +207,7 @@ useEffect(() => {
       const token = sessionStorage.getItem("token");
 
 const response = await axios.post(
-  "http://localhost:5000/api/preferences",
+  "https://news-alert-system-bgbm.onrender.com/api/preferences",
   {
     email,
     categories: selectedCategories,
@@ -233,26 +240,65 @@ const response = await axios.post(
       <main className="main-content">
 
       {activePage === "notifications" ? (
-    <div className="preferences-card">
-      <div className="card-header">
-        <h2>Recent Notifications</h2>
-      </div>
+  <div className="preferences-card notifications-page">
+    <div className="card-header">
+      <h2>🔔 Recent Notifications</h2>
+      <p>Your latest news alerts in one place.</p>
+    </div>
 
+    <div className="notifications-list">
       {notifications.length === 0 ? (
-        <p>No notifications yet.</p>
-      ) : (notifications.map((notification) => (
-          <div key={notification._id} className="notification-item">
-            <h3>{notification.title}</h3>
-            <p>{notification.message}</p>
+        <div className="notifications-empty">
+          <span>📰</span>
+          <h3>No notifications yet</h3>
+          <p>Your latest news alerts will appear here.</p>
+        </div>
+      ) : (
+        notifications.map((notification) => (
+          <div
+            key={notification._id}
+            className="notification-item"
+          >
+            <div className="notification-icon">📰</div>
 
-            <small>
-              {notification.category} •{" "}
-              {new Date(notification.createdAt).toLocaleString()}
-            </small>
+            <div className="notification-content">
+              <div className="notification-meta">
+                <span className="notification-category">
+                  {notification.category || "News"}
+                </span>
+
+                <small>
+                  {notification.createdAt
+                    ? new Date(
+                        notification.createdAt
+                      ).toLocaleString()
+                    : "Date unavailable"}
+                </small>
+              </div>
+
+              <h3>{notification.title || "Untitled news"}</h3>
+
+              <p>
+                {notification.message ||
+                  "No description available."}
+              </p>
+
+              {notification.url && (
+                <a
+                  href={notification.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="notification-read-link"
+                >
+                  Read Full News →
+                </a>
+              )}
+            </div>
           </div>
         ))
       )}
     </div>
+  </div>
 
 ) : activePage === "preferences" ? (
 

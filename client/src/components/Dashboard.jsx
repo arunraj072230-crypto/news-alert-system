@@ -2,17 +2,35 @@ import {useState} from "react";
 import { useNavigate } from "react-router-dom";
 import { enablePushNotifications } from "../pushNotifications";
 
-
 function Dashboard({ setActivePage, activePage, handleLogout }) {
 
   const [showSettings, setShowSettings] = useState(false);
   const navigate = useNavigate();
-  const handleEnableNotifications = async () => {
+  
+  
+const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+
+const handleEnableNotifications = async () => {
   try {
-    const message = await enablePushNotifications();
-    alert(message);
+    if (notificationsEnabled) {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription =
+        await registration.pushManager.getSubscription();
+
+      if (subscription) {
+        await subscription.unsubscribe();
+      }
+
+      setNotificationsEnabled(false);
+      alert("Push notifications disabled successfully!");
+    } else {
+      const message = await enablePushNotifications();
+
+      setNotificationsEnabled(true);
+      alert(message);
+    }
   } catch (error) {
-    alert(error.message || "Failed to enable notifications.");
+    alert(error.message || "Failed to update notifications.");
   }
 };
 
@@ -68,12 +86,9 @@ function Dashboard({ setActivePage, activePage, handleLogout }) {
   </>
 )}  
 
-<button
-  type="button"
-  onClick={handleEnableNotifications}
-  className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
->
-  Enable Notifications
+<button type="button" className="nav-item" onClick={handleEnableNotifications}>
+  <span>🔔</span>
+  {notificationsEnabled ? "Disable Notifications" : "Enable Notifications"}
 </button>
 
  <button type="button" onClick={handleLogout} className="nav-item"> 🚪 Logout</button>

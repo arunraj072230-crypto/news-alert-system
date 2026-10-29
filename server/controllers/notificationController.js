@@ -36,17 +36,23 @@ export const createNotification = async (req, res) => {
 
 export const getNotifications = async (req, res) => {
   try {
-    const notifications = await Notification.find()
-      .sort({ createdAt: -1 });
+    const email = req.user?.email;
 
-    res.status(200).json(notifications);
+    if (!email) {
+      return res.status(401).json({
+        message: "User email not found",
+      });
+    }
+
+    const notifications = await Notification.find({ email })
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    return res.status(200).json(notifications);
   } catch (error) {
-    console.error(
-      "Get notifications error:",
-      error.message
-    );
+    console.error("Get notifications error:", error.message);
 
-    res.status(500).json({
+    return res.status(500).json({
       message: "Failed to get notifications",
     });
   }

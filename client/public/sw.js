@@ -23,10 +23,28 @@ self.addEventListener("push", (event) => {
   );
 });
 
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
+  const targetUrl = new URL("/", self.location.origin).href;
+
   event.waitUntil(
-    clients.openWindow(event.notification.data.url || "/")
+    clients.matchAll({
+      type: "window",
+      includeUncontrolled: true,
+    }).then(async (windowClients) => {
+      for (const client of windowClients) {
+        if (new URL(client.url).origin === self.location.origin) {
+          await client.navigate(targetUrl);
+          await client.focus();
+          return;
+        }
+      }
+
+      return clients.openWindow(targetUrl);
+    })
   );
 });
+
+
