@@ -1,65 +1,26 @@
-import axios from "axios";
-import { sendNewsAlert,  sendNewsPushSummary } from "../services/alertService.js";
+import { fetchNewsForCategory } from "../services/newsService.js";
 
 export const getNews = async (req, res) => {
   try {
+    const category = String(req.query.category || "India").trim();
 
-     const category = req.query.category || "India";
-    
-        const categorySearch = {
-      technology:
-        "technology OR artificial intelligence OR software OR gadgets",
+    if (!category) {
+      return res.status(400).json({
+        message: "A news category or search term is required.",
+      });
+    }
 
-      sports:
-        "sports OR cricket OR football",
+    const result = await fetchNewsForCategory(category);
 
-      business:
-        "business OR finance OR economy OR stock market",
-
-      politics:
-        "politics OR government OR election",
-
-      science:
-        "science OR space OR research",
-
-      health:
-        "health OR medicine OR healthcare",
-
-      entertainment:
-        "movies OR cinema OR entertainment OR music",
-    };
-
-    const response = await axios.get(
-      "https://newsapi.org/v2/everything",
-      {
-        params: {
-          q: categorySearch[category] || category,
-          language: "en",
-          sortBy: "publishedAt",
-          apiKey: process.env.NEWS_API_KEY,
-        },
-      }
-    );
-
-    const articles = response.data.articles || [];
-
-    const io = req.app.get("io");
-
-io.emit("newsUpdate", {
-  category,
-  articles,
-});
-
-    if (req.query.skipAlerts !== "true" && articles.length > 0) {
-  await sendNewsAlert(articles[0], category);
-  await sendNewsPushSummary(articles, category);
-}
-
-    res.json(response.data);
+    return res.status(200).json({
+      status: result.status,
+      totalResults: result.totalResults,
+      articles: result.articles,
+    });
   } catch (error) {
     console.error("News fetch error:", error.message);
 
-    res.status(500).json({
+    return res.status(500).json({
       message: "Failed to fetch news",
     });
   }

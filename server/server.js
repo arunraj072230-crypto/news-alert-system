@@ -218,17 +218,35 @@ async function runNewsScheduler(frequency) {
   }
 }
 
-cron.schedule("*/5 * * * *", () => {
-  runImmediateNewsChecks();
-});
+cron.schedule(
+  "*/5 * * * *",
+  () => {
+    runImmediateNewsChecks();
+  },
+  {
+    timezone: "Asia/Kolkata",
+  }
+);
 
-cron.schedule("0 * * * *", () => {
-  runNewsScheduler("hourly");
-});
+cron.schedule(
+  "0 * * * *",
+  () => {
+    runNewsScheduler("hourly");
+  },
+  {
+    timezone: "Asia/Kolkata",
+  }
+);
 
-cron.schedule("0 8 * * *", () => {
-  runNewsScheduler("daily");
-});
+cron.schedule(
+  "0 8 * * *",
+  () => {
+    runNewsScheduler("daily");
+  },
+  {
+    timezone: "Asia/Kolkata",
+  }
+);
 
 async function startServer() {
   try {
